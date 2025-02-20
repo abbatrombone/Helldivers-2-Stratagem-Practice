@@ -155,15 +155,9 @@ public class Settings extends JFrame {
                             .build()
                             .parse();
                     for (keybindsPOJO kb : beans) {
-
-                        switch (kb.getKey()){
-                            case "up"    -> {if(!kb.getBind().equals(up_key.getText())){writeKeyBinds(kb,up_key);}}
-                            case "down"  -> {if(!kb.getBind().equals(down_key.getText())){writeKeyBinds(kb,down_key);}}
-                            case "left"  -> {if(!kb.getBind().equals(left_key.getText())){writeKeyBinds(kb,left_key);}}
-                            case "right" -> {if(!kb.getBind().equals(right_key.getText())){writeKeyBinds(kb,right_key);}}
-                            default -> throw new IllegalStateException("Unexpected value: " + kb.getKey());
+                        if(kb.getKey().equals("up")){
+                            if(!kb.getBind().equals(up_key.getText())){writeKeyBinds(kb,up_key,keycode);}
                         }
-                        System.out.println(kb.getKey() +":"+kb.getBind());
                     }
                 } catch (FileNotFoundException ex) {
                     Settings.writeLogFile(ex.toString());
@@ -198,7 +192,7 @@ public class Settings extends JFrame {
                             .parse();
                     for (keybindsPOJO kb : beans) {
                         if(kb.getKey().equals("down")){
-                            if(!kb.getBind().equals(down_key.getText())){writeKeyBinds(kb,down_key);}
+                            if(!kb.getBind().equals(down_key.getText())){writeKeyBinds(kb,down_key,keycode);}
                         }
                     }
                 } catch (FileNotFoundException ex) {
@@ -234,7 +228,7 @@ public class Settings extends JFrame {
                             .parse();
                     for (keybindsPOJO kb : beans) {
                         if(kb.getKey().equals("left")){
-                            if(!kb.getBind().equals(left_key.getText())){writeKeyBinds(kb,left_key);}
+                            if(!kb.getBind().equals(left_key.getText())){writeKeyBinds(kb,left_key,keycode);}
                         }
                     }
                 } catch (FileNotFoundException ex) {
@@ -271,7 +265,7 @@ public class Settings extends JFrame {
                             .parse();
                     for (keybindsPOJO kb : beans) {
                         if(kb.getKey().equals("right")){
-                            if(!kb.getBind().equals(right_key.getText())){writeKeyBinds(kb,right_key);}
+                            if(!kb.getBind().equals(right_key.getText())){writeKeyBinds(kb,right_key,keycode);}
                         }
                     }
                 } catch (FileNotFoundException ex) {
@@ -343,7 +337,7 @@ public class Settings extends JFrame {
         if (os.equals("Linux")) {
             filePath = filePath + "/.local/share/StrategemPractice";
         } //
-        if(SystemUtils.IS_OS_MAC){filePath = "/RandomStudent";}
+        if(SystemUtils.IS_OS_MAC){filePath = "/StrategemPractice";}
         if(SystemUtils.IS_OS_WINDOWS){filePath = "/Library/Applications Support/StrategemPractice";}
 
         return filePath;
@@ -358,7 +352,7 @@ public class Settings extends JFrame {
                 reader = new CSVReader(new FileReader(filepath));
                 String[] line;
                 while ((line = reader.readNext()) != null) {
-                    if(Arrays.toString(line).replace("[", "").replace("]","").equals("key")){
+                    if(Arrays.toString(line).replace("[", "").replace("]","").equals("key")){ //empty body?
                     }else{
                         list.add(Arrays.toString(line).replace("[", "").replace("]", ""));
                     }
@@ -377,37 +371,9 @@ public class Settings extends JFrame {
         }
         Collections.sort(list, String.CASE_INSENSITIVE_ORDER);
 
-
         return "";
     }
-    public String[] settingsFile(){
-        String filepath = systemFilePath() + "/keybinds.csv";
-        List<keybindsPOJO> beans;
-        try {
-            beans = new CsvToBeanBuilder<keybindsPOJO>(new FileReader(filepath))
-                    .withType(keybindsPOJO.class)
-                    .build()
-                    .parse();
-            for (keybindsPOJO kb : beans) {
-
-                switch (kb.getKey()){
-                    case "up"   ->  {if(!kb.getBind().equals(up_key.getText())){System.out.println("up");}}
-                    case "down"  ->  {if(!kb.getBind().equals(down_key.getText())){System.out.println("down");}}
-                    case "left" ->  {if(!kb.getBind().equals(left_key.getText())){System.out.println("left" );}}
-                    case "right" ->  {if(!kb.getBind().equals(right_key.getText())){System.out.println("right");}}
-                    default -> throw new IllegalStateException("Unexpected value: " + kb.getKey());
-                }
-                System.out.println(kb.getKey() +":"+kb.getBind());
-            }
-        } catch (FileNotFoundException ex) {
-            Settings.writeLogFile(ex.toString());
-            throw new RuntimeException(ex);
-        }
-        String[] splitArray = new String[0];
-
-        return splitArray;
-    }
-    public static void writeKeyBinds(keybindsPOJO kb,JTextPane textPane){
+    public static void writeKeyBinds(keybindsPOJO kb,JTextPane textPane, int keycode){
         String file = systemFilePath() + "/keybinds.csv";
 
         CSVParser parser = new CSVParserBuilder()
@@ -420,7 +386,13 @@ public class Settings extends JFrame {
                     .build()
                     .parse();
             for (keybindsPOJO k : beans) {
-                if (k.getKey().equals(kb.getKey())) {
+                // 10 and 44 are return and comma, these mess up with csv files!
+                if((keycode == 10 || keycode == 44) && k.getKey().equals(kb.getKey())){
+                    illegalKey();
+                    textPane.setText(k.getBind());
+                    return;
+                }
+                else if (k.getKey().equals(kb.getKey())) {
                     k.setBind(textPane.getText());
                 }
             }
@@ -428,15 +400,15 @@ public class Settings extends JFrame {
             try (BufferedWriter bw = Files.newBufferedWriter(path,
                     StandardOpenOption.TRUNCATE_EXISTING,
                     StandardOpenOption.WRITE)) {
-                bw.write("key,bind");
+                bw.write("key,bind,keycode");
                 bw.newLine();
                 for (keybindsPOJO k : beans) {
                     if(kb.getKey().equals(k.getKey())){
-                        String line = String.format("%s,%s", k.getKey(), k.getBind());
+                        String line = String.format("%s,%s,%d", k.getKey(), k.getBind(), keycode);
                         bw.write(line);
                         bw.newLine();
                     }else{
-                       String line = String.format("%s,%s", k.getKey(), k.getBind());
+                       String line = String.format("%s,%s,%d", k.getKey(), k.getBind(),k.getkeycode());
                        bw.write(line);
                        bw.newLine();
                     }
@@ -460,13 +432,13 @@ public class Settings extends JFrame {
         }
 
     }
-    public static void clearCsv(String path) throws Exception {
-        //might want to have it rewrite to defualts instead
-        FileWriter fw = new FileWriter(path,false);
-        PrintWriter pw = new PrintWriter(fw,false);
-        pw.flush();
-        pw.close();
-        fw.close();
+
+    public static void illegalKey(){
+        JOptionPane.showMessageDialog(
+                new JFrame(),
+                "Illegal Key Bind!",
+                "Illegal Key Bind!",
+                JOptionPane.ERROR_MESSAGE);
     }
 
 }
