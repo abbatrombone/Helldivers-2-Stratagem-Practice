@@ -42,9 +42,7 @@ public class TextSettings extends JFrame{
     private JLabel textboxSize_label;
     private JLabel textboxColor_label;
 
-
     public TextSettings() {
-        initComponents();
         File newDirectory = new File(systemFilePath());
         if (!newDirectory.exists()) {
             newDirectory.mkdir();
@@ -53,9 +51,12 @@ public class TextSettings extends JFrame{
         //InputStream is = getClass().getClassLoader().getResourceAsStream("TextSettings.csv");
         File textSettingsFile = new File(systemFilePath() + "/TextSettings.csv");
         File logfile = new File(systemFilePath() + "/Logfile.log");
+        System.out.println("Do i exist?" + textSettingsFile.exists());
+
         if(!textSettingsFile.exists()){
             try {
                 textSettingsFile.createNewFile();
+                makeFile(textSettingsFile.toString());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -63,10 +64,12 @@ public class TextSettings extends JFrame{
         if(!logfile.exists()){
             try {
                 logfile.createNewFile();
+                makeFile(textSettingsFile.toString());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
+        initComponents();
     }
     private void initComponents() {
         String[] colors = {"BLACK","BLUE","CYAN","DARK_GRAY","GRAY","GREEN","LIGHT_GRAY","MAGENTA","ORANGE","PINK","RED","WHITE","YELLOW"};
@@ -147,17 +150,15 @@ public class TextSettings extends JFrame{
         textboxSize_label.setForeground(new Color(0, 0, 0));
         textboxSize_label.setText("Textbox Size");
         textboxSize_label.setSize(textboxSize_label.getPreferredSize());
-        //textboxSize_label.setBounds(142,142,700,700);
 
         textboxColor_label.setBackground(new Color(255, 255, 255));
         textboxColor_label.setFont(new Font("Segoe UI", Font.BOLD, 24));
         textboxColor_label.setForeground(new Color(0, 0, 0));
         textboxColor_label.setText("Textbox Color");
         textboxColor_label.setSize(textboxColor_label.getPreferredSize());
-        //textboxColor_label.setBounds(142,142,700,700);
 
         textColor.setEditable(true);
-        textColor.setSize(300,30);
+        textColor.setSize(300,Integer.parseInt(readSettings("textboxSize")));
         textColor.setFont(new Font("Segoe UI", 3, Integer.parseInt(readSettings("textSize"))));
         textColor.setForeground(tcolor);
         textColor.setBackground(bcolor);
@@ -192,7 +193,7 @@ public class TextSettings extends JFrame{
         textColor.getEditor().getEditorComponent().setForeground(tcolor);
 
         textSize.setEditable(true);
-        textSize.setSize(300,30);
+        textSize.setSize(300,Integer.parseInt(readSettings("textboxSize")));
         textSize.setFont(new Font("Segoe UI", 3, Integer.parseInt(readSettings("textSize"))));
         textSize.setForeground(tcolor);
         textSize.setBackground(bcolor);
@@ -232,7 +233,7 @@ public class TextSettings extends JFrame{
         });
 
         textboxSize.setEditable(true);
-        textboxSize.setSize(300,30);
+        textboxSize.setSize(300,Integer.parseInt(readSettings("textboxSize")));
         textboxSize.setFont(new Font("Segoe UI", 3, Integer.parseInt(readSettings("textSize"))));
         textboxSize.setText(readSettings("textboxSize"));
         textboxSize.setForeground(tcolor);
@@ -272,7 +273,7 @@ public class TextSettings extends JFrame{
         });
 
         textboxColor.setEditable(true);
-        textboxColor.setSize(300,30);
+        textboxColor.setSize(300,Integer.parseInt(readSettings("textboxSize")));
         textboxColor.setFont(new Font("Segoe UI", 3, Integer.parseInt(readSettings("textSize"))));
         textboxColor.setFocusable(true);
         textboxColor.setForeground(tcolor);
@@ -359,12 +360,13 @@ public class TextSettings extends JFrame{
     }
     public static String systemFilePath() {
         String filePath = System.getProperty("user.home");
+
         String os = SystemUtils.OS_NAME;
         if (os.equals("Linux")) {
             filePath = filePath + "/.local/share/StrategemPractice";
-        } //
-        if(SystemUtils.IS_OS_MAC){filePath = "/StrategemPractice";}
-        if(SystemUtils.IS_OS_WINDOWS){filePath = "/Library/Applications Support/StrategemPractice";}
+        }
+        if(SystemUtils.IS_OS_MAC){filePath += "/StrategemPractice";}
+        if(SystemUtils.IS_OS_WINDOWS){filePath += "/AppData/Roaming/StrategemPractice";}
 
         return filePath;
     }
@@ -578,9 +580,9 @@ public class TextSettings extends JFrame{
         }
     }
     public static String readSettings(String header){
-        InputStream is = TextSettings.class.getClassLoader().getResourceAsStream("TextSettings.csv");
+        //InputStream is = TextSettings.class.getClassLoader().getResourceAsStream("TextSettings.csv");
+        //CSVReader reader = new CSVReader(new InputStreamReader(is));
         String file = systemFilePath() + "/TextSettings.csv";
-        CSVReader reader = new CSVReader(new InputStreamReader(is));
         Path path = Paths.get(file);
 
         CSVParser parser = new CSVParserBuilder()
@@ -640,15 +642,33 @@ public class TextSettings extends JFrame{
             case "YELLOW"     -> returnedColor = Color.YELLOW;
             default           -> returnedColor = Color.GRAY;
         }
-
         return returnedColor;
     }
-    public static void illegalKey(){
-        JOptionPane.showMessageDialog(
-                new JFrame(),
-                "Illegal Key Bind!",
-                "Illegal Key Bind!",
-                JOptionPane.ERROR_MESSAGE);
+    public static void makeFile(String filename){
+
+        Path path = Paths.get(filename);
+
+        CSVParser parser = new CSVParserBuilder()
+                .withSeparator(',')
+                .withIgnoreQuotations(true)
+                .build();
+
+        try {
+            List<TextSettingsPOJO> beans = new CsvToBeanBuilder<TextSettingsPOJO>(new FileReader(filename)).withType(TextSettingsPOJO.class)
+                    .build()
+                    .parse();
+
+            try (BufferedWriter bw = Files.newBufferedWriter(path,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE)) {
+                bw.write("textColor,textSize,textboxSize,textboxColor");
+                bw.newLine();
+                bw.write("BLACK,12,100,White");
+            }
+        } catch (IOException x) {
+            writeLogFile(x.toString());
+            x.printStackTrace();
+        }
     }
     class Renderer extends DefaultListCellRenderer {
         @Override

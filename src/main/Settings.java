@@ -338,7 +338,7 @@ public class Settings extends JFrame {
             filePath = filePath + "/.local/share/StrategemPractice";
         } //
         if(SystemUtils.IS_OS_MAC){filePath = "/StrategemPractice";}
-        if(SystemUtils.IS_OS_WINDOWS){filePath = "/Library/Applications Support/StrategemPractice";}
+        if(SystemUtils.IS_OS_WINDOWS){filePath += "/AppData/Roaming/StrategemPractice";}
 
         return filePath;
     }
@@ -432,7 +432,6 @@ public class Settings extends JFrame {
         }
 
     }
-
     public static void illegalKey(){
         JOptionPane.showMessageDialog(
                 new JFrame(),
