@@ -1,0 +1,122 @@
+Prompt:
+Based on the code found in src/main in the gitbuthub repo: https://github.com/abbatrombone/Helldivers-2-Stratagem-Practice/tree/main/src/main
+what coding advice do you have?
+
+GPT:
+1. Code Optimization & Readability
+Encapsulate Stratagem Data
+Instead of using a 2D array (String[][] STRATAGEMS), consider using a Map<String, String> for better readability and lookup efficiency.
+
+java
+Copy
+Edit
+private static final Map<String, String> STRATAGEMS = Map.of(
+    "Reinforce", "\u2191 \u2193 \u2192 \u2190 \u2191",
+    "Resupply", "\u2193 \u2193 \u2191 \u2192",
+    "EAT-17 Expendable Anti-Tank", "\u2193 \u2193 \u2190 \u2191 \u2192",
+    "Orbital 380mm HE Barrage", "\u2192 \u2193 \u2191 \u2191 \u2190 \u2193 \u2193",
+    "Strafing Run", "\u2192 \u2192 \u2191"
+);
+This makes it easier to manage and modify the stratagems.
+
+Use Enum for Key Bindings
+Instead of using a Map<Character, String>, define an enum to improve readability and maintainability:
+
+java
+Copy
+Edit
+public enum Keybind {
+    UP('w', "\u2191"),
+    DOWN('s', "\u2193"),
+    LEFT('a', "\u2190"),
+    RIGHT('d', "\u2192");
+
+    private final char key;
+    private final String symbol;
+
+    Keybind(char key, String symbol) {
+        this.key = key;
+        this.symbol = symbol;
+    }
+
+    public static String getSymbol(char key) {
+        for (Keybind k : values()) {
+            if (k.key == key) return k.symbol;
+        }
+        return null;
+    }
+}
+Then, in your KeyListener, replace:
+
+java
+Copy
+Edit
+if (keyBindings.containsKey(keyChar)) {
+    inputField.setText(inputField.getText() + keyBindings.get(keyChar) + " ");
+}
+with:
+
+java
+Copy
+Edit
+String symbol = Keybind.getSymbol(keyChar);
+if (symbol != null) {
+    inputField.setText(inputField.getText() + symbol + " ");
+}
+2. Improve UI Layout
+The settings menu is functional but could be more user-friendly. Instead of multiple dialog pop-ups, consider using a JTabbedPane for all settings in one window.
+When updating the text size, also update all component fonts dynamically.
+3. Improve playSound() Method
+Your current method loads and plays a sound each time, which is inefficient. Instead, pre-load the sounds and reuse them:
+java
+Copy
+Edit
+private final Map<String, Clip> soundClips = new HashMap<>();
+
+private void loadSounds() {
+    loadSound("correct.wav");
+    loadSound("incorrect.wav");
+}
+
+private void loadSound(String filename) {
+    try {
+        File file = new File(filename);
+        AudioInputStream audioStream = AudioSystem.getAudioInputStream(file);
+        Clip clip = AudioSystem.getClip();
+        clip.open(audioStream);
+        soundClips.put(filename, clip);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+private void playSound(String filename) {
+    Clip clip = soundClips.get(filename);
+    if (clip != null) {
+        clip.setFramePosition(0);
+        clip.start();
+    }
+}
+This prevents delays when playing sounds.
+4. Improve Timer Logic
+The updateTimer() method currently runs every 100ms, but it's unnecessary to update that frequently. Instead, update every second:
+java
+Copy
+Edit
+timer = new Timer(1000, e -> updateTimer());
+5. Fix Minor Bugs
+Double Call to updateTimer(): You have updateTimer() twice in the Cannot resolve methods issue. Remove the duplicate call.
+Prevent Input Overflow: If users keep typing after entering the code, it doesn't clear the field. Add:
+java
+Copy
+Edit
+if (inputField.getText().length() > currentCode.length()) {
+    inputField.setText(inputField.getText().substring(0, currentCode.length()));
+}
+Final Thoughts
+Your project is solid! These changes would: ✔ Improve maintainability
+✔ Reduce redundant computations
+✔ Make UI more user-friendly
+✔ Optimize sound playback
+
+Would you like help implementing any of these? 😊
